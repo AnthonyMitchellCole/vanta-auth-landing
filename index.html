@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#7B2D8E">
+<meta name="robots" content="noindex,nofollow">
+<title>Vanta Sales - Open App</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:linear-gradient(135deg,#7B2D8E 0%,#3B82F6 35%,#14B8A6 70%,#10B981 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:#fff}
+.c{text-align:center;max-width:400px;width:100%}
+.logo-box{margin-bottom:40px;padding:24px 32px;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.15);display:inline-block}
+.logo{max-width:200px;height:auto}
+.logo-text{font-size:24px;font-weight:700;color:#3B82F6}
+h1{font-size:28px;font-weight:700;margin-bottom:12px;letter-spacing:-0.5px}
+p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
+.btn{display:inline-block;background:#fff;color:#3B82F6;font-family:'IBM Plex Sans',sans-serif;font-size:17px;font-weight:600;padding:16px 48px;border-radius:12px;text-decoration:none;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.btn:active{transform:translateY(-1px)}
+.ld{margin-top:24px;font-size:14px;opacity:.85;display:flex;align-items:center;justify-content:center;gap:10px}
+.sp{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.help{margin-top:40px;font-size:13px;opacity:.75}
+.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:12px;padding:20px;margin-bottom:24px}
+.err p{color:#FEE2E2;font-weight:500;margin:0}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="c">
+<div class="logo-box">
+<img src="https://vikor.quickbase.com/up/bn2qw48zi/g/r6/eh/vb" alt="Vanta" class="logo" id="logo" onerror="this.style.display='none';document.getElementById('lt').style.display='block'">
+<span class="logo-text hide" id="lt">Vanta Sales</span>
+</div>
+
+<div id="error-view" class="hide">
+<h1>Link Error</h1>
+<div class="err"><p id="error-msg">There was a problem with this link.</p></div>
+<p class="help">Please request a new link from your administrator.</p>
+</div>
+
+<div id="success-view">
+<h1>Open Vanta Sales</h1>
+<p>Tap the button below to continue in the app.</p>
+<a href="#" class="btn" id="open-btn">Open App</a>
+<div class="ld" id="ld"><span class="sp"></span><span>Opening automatically...</span></div>
+<p class="help">Don't have the app? Contact your administrator.</p>
+</div>
+</div>
+
+<script>
+(function() {
+  var APP_SCHEME = 'io.supabase.vantasalesapp';
+  var params = new URLSearchParams(window.location.search);
+  
+  // Check for errors
+  var error = params.get('error');
+  var errorDesc = params.get('error_description');
+  
+  if (error) {
+    document.getElementById('success-view').classList.add('hide');
+    document.getElementById('error-view').classList.remove('hide');
+    
+    var msg = errorDesc || 
+      (error === 'access_denied' ? 'Access denied. Contact your administrator.' :
+       error === 'expired' || error === 'otp_expired' ? 'This link has expired. Please request a new one.' :
+       'There was a problem with this link.');
+    document.getElementById('error-msg').textContent = msg;
+    return;
+  }
+  
+  // Build deep link
+  var deepLink = APP_SCHEME + '://callback' + window.location.search;
+  
+  // Set button href
+  document.getElementById('open-btn').href = deepLink;
+  
+  // Auto-open after delay
+  setTimeout(function() {
+    window.location.href = deepLink;
+  }, 1500);
+  
+  // Hide loading after timeout
+  setTimeout(function() {
+    var el = document.getElementById('ld');
+    if (el) el.style.display = 'none';
+  }, 4000);
+})();
+</script>
+</body>
+</html>
