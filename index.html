@@ -53,18 +53,19 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
 <script>
 (function() {
   var APP_SCHEME = 'vantasalesapp';
-  var params = new URLSearchParams(window.location.search);
   
-  // Check for errors in query params or hash fragment
-  var error = params.get('error');
-  var errorDesc = params.get('error_description');
+  // Get params from both query string and hash fragment
+  var queryParams = new URLSearchParams(window.location.search);
+  var hashParams = window.location.hash ? new URLSearchParams(window.location.hash.substring(1)) : new URLSearchParams();
   
-  // Also check hash fragment for errors (some OAuth flows use fragments)
-  if (!error && window.location.hash) {
-    var hashParams = new URLSearchParams(window.location.hash.substring(1));
-    error = error || hashParams.get('error');
-    errorDesc = errorDesc || hashParams.get('error_description');
+  // Helper to get param from either source (hash takes priority for token-based flow)
+  function getParam(name) {
+    return hashParams.get(name) || queryParams.get(name);
   }
+  
+  // Check for errors first
+  var error = getParam('error');
+  var errorDesc = getParam('error_description');
   
   if (error) {
     document.getElementById('success-view').classList.add('hide');
@@ -78,12 +79,32 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
     return;
   }
   
-  // Build deep link - include both query params AND hash fragment
-  // Supabase may use either depending on the auth flow (PKCE vs implicit)
-  var deepLink = APP_SCHEME + '://callback' + window.location.search + window.location.hash;
+  // Check for token-based flow (new approach - token in URL fragment)
+  // Email template format: https://landing/#token=XXX&type=invite&email=user@example.com
+  var token = getParam('token');
+  var tokenHash = getParam('token_hash');
+  var type = getParam('type');
+  var email = getParam('email');
   
-  // Debug: log the deep link being constructed
-  console.log('Deep link:', deepLink);
+  // Build deep link based on what we have
+  var deepLink;
+  
+  if (token || tokenHash) {
+    // Token-based flow: pass token directly to app for verifyOtp
+    var params = [];
+    if (token) params.push('token=' + encodeURIComponent(token));
+    if (tokenHash) params.push('token_hash=' + encodeURIComponent(tokenHash));
+    if (type) params.push('type=' + encodeURIComponent(type));
+    if (email) params.push('email=' + encodeURIComponent(email));
+    
+    deepLink = APP_SCHEME + '://callback?' + params.join('&');
+    console.log('Token-based deep link (token redacted for security)');
+  } else {
+    // Legacy flow: pass through query params and hash fragment as-is
+    // This handles redirects from Supabase /verify endpoint
+    deepLink = APP_SCHEME + '://callback' + window.location.search + window.location.hash;
+    console.log('Legacy deep link flow');
+  }
   
   // Set button href - user must tap to trigger (iOS requires user-initiated action)
   document.getElementById('open-btn').href = deepLink;
