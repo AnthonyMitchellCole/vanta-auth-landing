@@ -52,12 +52,19 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
 
 <script>
 (function() {
-  var APP_SCHEME = 'io.supabase.vantasalesapp';
+  var APP_SCHEME = 'vantasalesapp';
   var params = new URLSearchParams(window.location.search);
   
-  // Check for errors
+  // Check for errors in query params or hash fragment
   var error = params.get('error');
   var errorDesc = params.get('error_description');
+  
+  // Also check hash fragment for errors (some OAuth flows use fragments)
+  if (!error && window.location.hash) {
+    var hashParams = new URLSearchParams(window.location.hash.substring(1));
+    error = error || hashParams.get('error');
+    errorDesc = errorDesc || hashParams.get('error_description');
+  }
   
   if (error) {
     document.getElementById('success-view').classList.add('hide');
@@ -71,8 +78,9 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
     return;
   }
   
-  // Build deep link
-  var deepLink = APP_SCHEME + '://callback' + window.location.search;
+  // Build deep link - include both query params AND hash fragment
+  // Supabase may use either depending on the auth flow (PKCE vs implicit)
+  var deepLink = APP_SCHEME + '://callback' + window.location.search + window.location.hash;
   
   // Set button href
   document.getElementById('open-btn').href = deepLink;
