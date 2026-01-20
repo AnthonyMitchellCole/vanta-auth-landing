@@ -45,7 +45,7 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
 <h1>Open Vanta Sales</h1>
 <p>Tap the button below to continue in the app.</p>
 <a href="#" class="btn" id="open-btn">Open App</a>
-<div class="ld" id="ld"><span class="sp"></span><span>Opening automatically...</span></div>
+<div class="ld" id="ld"><span>Tap the button above to continue</span></div>
 <p class="help">Don't have the app? Contact your administrator.</p>
 </div>
 </div>
@@ -85,30 +85,11 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
   // Debug: log the deep link being constructed
   console.log('Deep link:', deepLink);
   
-  // Set button href
+  // Set button href - user must tap to trigger (iOS requires user-initiated action)
   document.getElementById('open-btn').href = deepLink;
   
-  // Function to open app using multiple methods for better iOS compatibility
-  function openApp() {
-    // Method 1: Try using an anchor click (most reliable for user-initiated actions)
-    var link = document.createElement('a');
-    link.href = deepLink;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-  
-  // Auto-open after delay (user can also tap button manually)
-  setTimeout(function() {
-    openApp();
-  }, 1500);
-  
-  // Hide loading after timeout
-  setTimeout(function() {
-    var el = document.getElementById('ld');
-    if (el) el.style.display = 'none';
-  }, 4000);
+  // No auto-redirect - iOS blocks programmatic URL scheme triggers with a restrictive prompt
+  // User must tap the "Open App" button for the friendlier "Open in app?" prompt
 })();
 </script>
 </body>
