@@ -82,12 +82,26 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
   // Supabase may use either depending on the auth flow (PKCE vs implicit)
   var deepLink = APP_SCHEME + '://callback' + window.location.search + window.location.hash;
   
+  // Debug: log the deep link being constructed
+  console.log('Deep link:', deepLink);
+  
   // Set button href
   document.getElementById('open-btn').href = deepLink;
   
-  // Auto-open after delay
+  // Function to open app using multiple methods for better iOS compatibility
+  function openApp() {
+    // Method 1: Try using an anchor click (most reliable for user-initiated actions)
+    var link = document.createElement('a');
+    link.href = deepLink;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  
+  // Auto-open after delay (user can also tap button manually)
   setTimeout(function() {
-    window.location.href = deepLink;
+    openApp();
   }, 1500);
   
   // Hide loading after timeout
