@@ -26,6 +26,15 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
 .err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:12px;padding:20px;margin-bottom:24px}
 .err p{color:#FEE2E2;font-weight:500;margin:0}
 .hide{display:none}
+.otp-box{background:rgba(255,255,255,.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:20px;margin-top:24px;margin-bottom:8px}
+.otp-label{font-size:13px;opacity:.85;margin-bottom:8px !important;font-weight:500}
+.otp-code{font-size:32px;font-weight:700;letter-spacing:8px;font-family:'Courier New',monospace;margin-bottom:12px !important;opacity:1}
+.copy-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 20px;border-radius:8px;cursor:pointer;transition:background .2s}
+.copy-btn:hover{background:rgba(255,255,255,.3)}
+.copy-btn:active{background:rgba(255,255,255,.15)}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0}
+.divider-line{flex:1;height:1px;background:rgba(255,255,255,.25)}
+.divider-text{font-size:13px;opacity:.7;margin-bottom:0}
 </style>
 </head>
 <body>
@@ -44,7 +53,19 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
 <div id="success-view">
 <h1>Open Vanta Sales</h1>
 <p>Tap the button below to continue in the app.</p>
-<a href="#" class="btn" id="open-btn">Open App</a>
+<a href="#" class="btn" id="open-btn" rel="noreferrer noopener">Open App</a>
+<div id="otp-section" class="hide">
+<div class="divider">
+<span class="divider-line"></span>
+<span class="divider-text">or enter code manually</span>
+<span class="divider-line"></span>
+</div>
+<div class="otp-box">
+<p class="otp-label">Your verification code</p>
+<p class="otp-code" id="otp-display"></p>
+<button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy Code</button>
+</div>
+</div>
 <div class="ld" id="ld"><span>Tap the button above to continue</span></div>
 <p class="help">Don't have the app? Contact your administrator.</p>
 </div>
@@ -58,9 +79,11 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
   var queryParams = new URLSearchParams(window.location.search);
   var hashParams = window.location.hash ? new URLSearchParams(window.location.hash.substring(1)) : new URLSearchParams();
   
-  // Helper to get param from either source (hash takes priority for token-based flow)
+  // Helper to get param from either source
+  // Query params take priority (survive Proofpoint/proxy redirects)
+  // Hash params are fallback for backward compatibility
   function getParam(name) {
-    return hashParams.get(name) || queryParams.get(name);
+    return queryParams.get(name) || hashParams.get(name);
   }
   
   // Check for errors first
@@ -73,18 +96,26 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
     
     var msg = errorDesc || 
       (error === 'access_denied' ? 'Access denied. Contact your administrator.' :
-       error === 'expired' || error === 'otp_expired' ? 'This link has expired. Please request a new one.' :
+       (error === 'expired' || error === 'otp_expired') ? 'This link has expired. Please request a new one.' :
        'There was a problem with this link.');
     document.getElementById('error-msg').textContent = msg;
     return;
   }
   
-  // Check for token-based flow (new approach - token in URL fragment)
-  // Email template format: https://landing/#token=XXX&type=invite&email=user@example.com
+  // Check for token-based flow
+  // Email template format: https://landing/?token_hash=XXX&type=recovery&email=user@example.com&token=123456
   var token = getParam('token');
   var tokenHash = getParam('token_hash');
   var type = getParam('type');
   var email = getParam('email');
+  
+  // Show OTP code section only when token is exactly 6 digits (valid numeric OTP from email template)
+  if (token && /^\d{6}$/.test(token)) {
+    document.getElementById('otp-display').textContent = token;
+    document.getElementById('otp-section').classList.remove('hide');
+    // Store for copy functionality
+    window._otpCode = token;
+  }
   
   // Build deep link based on what we have
   var deepLink;
@@ -112,6 +143,42 @@ p{font-size:16px;opacity:.95;margin-bottom:32px;line-height:1.5}
   // No auto-redirect - iOS blocks programmatic URL scheme triggers with a restrictive prompt
   // User must tap the "Open App" button for the friendlier "Open in app?" prompt
 })();
+
+function copyCode() {
+  var code = window._otpCode;
+  if (!code) return;
+  
+  var btn = document.getElementById('copy-btn');
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function() {
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = 'Copy Code'; }, 2000);
+    }).catch(function() {
+      fallbackCopy(code, btn);
+    });
+  } else {
+    fallbackCopy(code, btn);
+  }
+}
+
+function fallbackCopy(text, btn) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy Code'; }, 2000);
+  } catch (e) {
+    btn.textContent = 'Copy failed';
+    setTimeout(function() { btn.textContent = 'Copy Code'; }, 2000);
+  }
+  document.body.removeChild(ta);
+}
 </script>
 </body>
 </html>
